@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: frozen_bridges_bot
+    env_file:
+      - .env
+    restart: unless-stopped

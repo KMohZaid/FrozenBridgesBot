@@ -1,0 +1,11 @@
+# Telegram client library
+pyrotgfork
+
+# For tgcrypto speedups
+tgcrypto
+
+# PostgreSQL adapter for Python
+psycopg2-binary
+
+# For reading .env files
+python-dotenv
