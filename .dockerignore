@@ -1,0 +1,15 @@
+# Docker build ignore file
+
+# Ignore the git directory
+.git/
+
+# Ignore environment files
+.env
+
+# Ignore the PostgreSQL data directory
+db_data/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
