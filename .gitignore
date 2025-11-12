@@ -1,0 +1,12 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Auto-generated files
+auto_generated_commands_list.txt
+
+# Docker
+db_data/
