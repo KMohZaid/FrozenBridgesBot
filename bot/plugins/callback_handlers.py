@@ -159,21 +159,33 @@ async def handle_vote(client: Client, query: CallbackQuery, game, player, parts)
                     game.next_turn()
                     await send_turn_start_message(client, game)
                 else:
+                    from pyrogram.types import ReplyParameters
+                    reply_params = None
+                    if game.player_list_message_id:
+                        reply_params = ReplyParameters(message_id=game.player_list_message_id)
                     await client.send_message(
-                        game.chat_id,
-                        f"🗳 Vote passed! {target.mention} has been kicked from the game."
+                        chat_id=game.chat_id,
+                        text=f"🗳 Vote passed! {target.mention} has been kicked from the game.",
+                        reply_parameters=reply_params,
+                        message_thread_id=game.message_thread_id,
                     )
         elif vote_type == "end":
             await end_game_logic(client, game.chat_id, "🗳 Vote passed! The game has ended.")
         return
 
     elif vote_outcome == VoteOutcome.FAILED_IMPOSSIBLE:
+        from pyrogram.types import ReplyParameters
         vote_type = game.vote_type
         game.reset_vote()
         await query.message.delete()
+        reply_params = None
+        if game.player_list_message_id:
+            reply_params = ReplyParameters(message_id=game.player_list_message_id)
         await client.send_message(
             chat_id=game.chat_id,
-            text=f"🗳 Vote to {vote_type} failed! It's no longer possible to reach the required 'Yes' votes."
+            text=f"🗳 Vote to {vote_type} failed! It's no longer possible to reach the required 'Yes' votes.",
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
         )
         return
 
@@ -285,10 +297,17 @@ async def handle_send_private_question(client: Client, query: CallbackQuery, gam
         f"⏱️ You have {time_display} to answer."
     )
 
+    from pyrogram.types import ReplyParameters
+    reply_params = None
+    if game.player_list_message_id:
+        reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
     answering_msg = await client.send_message(
         chat_id=game.chat_id,
         text=message_text,
         reply_markup=keyboard,
+        reply_parameters=reply_params,
+        message_thread_id=game.message_thread_id,
     )
 
     # Store the message ID for later updates
@@ -365,11 +384,18 @@ async def handle_change_question(client: Client, query: CallbackQuery, game, pla
     )
 
     # Send simple request notification to questioner
+    from pyrogram.types import ReplyParameters
+    reply_params = None
+    if game.player_list_message_id:
+        reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
     await client.send_message(
-        game.chat_id,
-        f"🔄 **Question change requested**\n\n"
+        chat_id=game.chat_id,
+        text=f"🔄 **Question change requested**\n\n"
         f"{game.current_player.mention}, do you accept?",
-        reply_markup=keyboard
+        reply_markup=keyboard,
+        reply_parameters=reply_params,
+        message_thread_id=game.message_thread_id,
     )
 
     await query.answer("Request sent! Waiting for questioner's decision...")
@@ -414,11 +440,17 @@ async def handle_accept_question_change(client: Client, query: CallbackQuery, ga
     except Exception as e:
         # Message was deleted, send new notification
         LOGGER.warning(f"Failed to edit question change message: {e}")
+        from pyrogram.types import ReplyParameters
+        reply_params = None
+        if game.player_list_message_id:
+            reply_params = ReplyParameters(message_id=game.player_list_message_id)
         await client.send_message(
-            game.chat_id,
-            f"✅ **Question change accepted!**\n\n"
+            chat_id=game.chat_id,
+            text=f"✅ **Question change accepted!**\n\n"
             f"{game.current_player.mention}, please ask a different question.",
-            reply_markup=keyboard
+            reply_markup=keyboard,
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
         )
 
     # Reset the question and go back to asking state
@@ -461,10 +493,16 @@ async def handle_reject_question_change(client: Client, query: CallbackQuery, ga
     except Exception as e:
         # Message was deleted, send new notification
         LOGGER.warning(f"Failed to edit question change message: {e}")
+        from pyrogram.types import ReplyParameters
+        reply_params = None
+        if game.player_list_message_id:
+            reply_params = ReplyParameters(message_id=game.player_list_message_id)
         await client.send_message(
-            game.chat_id,
-            f"❌ **Question change rejected**\n\n"
-            f"The answerer must answer the original question."
+            chat_id=game.chat_id,
+            text=f"❌ **Question change rejected**\n\n"
+            f"The answerer must answer the original question.",
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
         )
 
     # Update the answering message button with new counter

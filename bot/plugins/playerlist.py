@@ -7,7 +7,7 @@ from .utils import send_player_list_with_ask_button
 
 @Client.on_message(filters.command("playerlist") & filters.group)
 async def playerlist_command(client: Client, message: Message):
-    """Sends an updated player list with current timer info."""
+    """Updates the existing player list message with current timer info."""
     chat_id = message.chat.id
     game = running_games.get(chat_id)
 
@@ -46,6 +46,6 @@ async def playerlist_command(client: Client, message: Message):
         time_display = f"{dice_time // 60} minute{'s' if dice_time >= 120 else ''}" if dice_time >= 60 else f"{dice_time} seconds"
         additional_text = f"🎲 Rolling dice! {time_display} remaining."
 
-    # Use unified player list function with timer info
+    # Use unified player list function - this will edit the existing message if it exists
     await send_player_list_with_ask_button(client, game, additional_text)
 

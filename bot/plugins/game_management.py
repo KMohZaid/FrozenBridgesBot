@@ -39,7 +39,10 @@ async def start_bridge_command(client: Client, message: Message):
     if not settings:
         database.create_group_settings(chat_id)
 
-    game = Game(chat_id)
+    # Detect topic thread if message is in a topic
+    message_thread_id = getattr(message, 'message_thread_id', None)
+
+    game = Game(chat_id, message_thread_id)
     running_games[chat_id] = game
 
     # Add the person who started the game
@@ -109,17 +112,13 @@ async def handle_lobby_callbacks(client: Client, query: CallbackQuery):
 
 @Client.on_message(filters.command("joinbridge") & filters.group)
 async def joinbridge_command(client: Client, message: Message):
-    """Allows a player to join an ongoing game."""
+    """Allows a player to join an ongoing game or lobby."""
     chat_id = message.chat.id
     user = message.from_user
     game = running_games.get(chat_id)
 
     if not game:
         await message.reply_text("There is no game to join.")
-        return
-
-    if game.game_state == GameState.WAITING:
-        await message.reply_text("The game is still in the lobby. Please use the 'Join Game' button on the lobby message.")
         return
 
     # Check if user is active in ANOTHER game
@@ -145,7 +144,21 @@ async def joinbridge_command(client: Client, message: Message):
         database.get_or_create_player(user.id, user.first_name)
         await message.reply_text("You have joined the game!")
 
-    await playerlist_command(client, message)
+    # Update lobby message if in WAITING state, otherwise show player list
+    if game.game_state == GameState.WAITING:
+        # Update the lobby message
+        if game.lobby_message_id:
+            try:
+                await client.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=game.lobby_message_id,
+                    text=game.get_lobby_message(),
+                    reply_markup=get_lobby_keyboard(chat_id),
+                )
+            except:
+                pass  # Ignore if can't edit
+    else:
+        await playerlist_command(client, message)
 
 
 @Client.on_message(filters.command(["leavebridge", "enoughbridge"]) & filters.group)
@@ -254,6 +267,8 @@ async def help_command(client: Client, message: Message):
 **⚡ During Game:**
 /giveup - Give up your turn (counted in stats)
 /del or /delete - Delete bot messages (reply to message)
+/choose option1, option2, ... - Randomly choose from a list
+/alphabet - Get a random letter from A-Z
 
 **🗳️ Voting:**
 /skipbridge - Vote to skip someone's turn
@@ -322,3 +337,65 @@ async def bridgeplan_command(client: Client, message: Message):
 
 **💡 Have ideas?** Use `/feedback <your suggestion>`!"""
     await message.reply_text(plan_text, quote=True)
+
+
+@Client.on_message(filters.command("choose") & filters.group)
+async def choose_command(client: Client, message: Message):
+    """Randomly chooses one item from a comma-separated list."""
+    import random
+
+    # Split by space with maxsplit=1 to get command and arguments
+    parts = message.text.split(maxsplit=1)
+
+    if len(parts) < 2:
+        await message.reply_text(
+            "Please provide a list of items separated by commas.\n\n"
+            "**Usage:** /choose option1, option2, option3",
+            quote=True
+        )
+        return
+
+    # Get the argument portion
+    arguments = parts[1]
+
+    # Split by comma and filter out empty strings (after rstrip)
+    items = [item.rstrip() for item in arguments.split(",")]
+    items = [item for item in items if item]  # Filter out empty strings
+
+    if not items:
+        await message.reply_text(
+            "No valid options found. Please provide items separated by commas.\n\n"
+            "**Usage:** /choose option1, option2, option3",
+            quote=True
+        )
+        return
+
+    if len(items) == 1:
+        await message.reply_text(
+            f"Only one option provided!\n\n🎯 **Choice:** {items[0]}",
+            quote=True
+        )
+        return
+
+    # Choose a random item
+    chosen = random.choice(items)
+
+    await message.reply_text(
+        f"🎲 **Options:** {len(items)}\n\n🎯 **I choose:** {chosen}",
+        quote=True
+    )
+
+
+@Client.on_message(filters.command("alphabet") & filters.group)
+async def alphabet_command(client: Client, message: Message):
+    """Returns a random letter from the alphabet."""
+    import random
+    import string
+
+    # Get a random uppercase letter
+    random_letter = random.choice(string.ascii_uppercase)
+
+    await message.reply_text(
+        f"🔤 **Random Alphabet:** {random_letter}",
+        quote=True
+    )

@@ -61,6 +61,7 @@ async def send_player_list_with_ask_button(client: Client, game: Game, additiona
         chat_id=game.chat_id,
         text=message_text,
         reply_markup=keyboard,
+        message_thread_id=game.message_thread_id,
     )
     game.player_list_message_id = new_message.id
 
@@ -116,6 +117,7 @@ async def send_turn_start_message(client: Client, game: Game):
         text=turn_message,
         reply_parameters=reply_params,
         reply_markup=keyboard,
+        message_thread_id=game.message_thread_id,
     )
 
     # Start asking timer
@@ -188,10 +190,23 @@ async def end_game_logic(client: Client, chat_id: int, text: str):
         del running_games[chat_id]
 
         # 6. Send end message with stats
-        await client.send_message(chat_id, final_message)
+        message_thread_id = game.message_thread_id
+        await client.send_message(chat_id, final_message, message_thread_id=message_thread_id)
 async def skip_turn_logic(client: Client, game, text: str):
     """Logic to skip a player's turn and advance the game."""
-    await client.send_message(game.chat_id, text)
+    from pyrogram.types import ReplyParameters
+
+    # Reply to player list if it exists
+    reply_params = None
+    if game.player_list_message_id:
+        reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
+    await client.send_message(
+        chat_id=game.chat_id,
+        text=text,
+        reply_parameters=reply_params,
+        message_thread_id=game.message_thread_id,
+    )
     game.game_state = GameState.PLAYING
     game.next_turn()
     game.answerer_id = None

@@ -51,6 +51,8 @@ def generate_command_list():
         "skipbridge": "⏭️ Vote to skip someone's turn",
         "endbridge": "🏁 Vote to end game",
         "votekick": "👢 Vote to kick a player",
+        "choose": "🎲 Randomly choose from a list",
+        "alphabet": "🔤 Get a random letter (A-Z)",
         "stats": "📊 View your statistics",
         "mystats": "📊 View your statistics (alias)",
         "leaderboard": "🏆 View top players",

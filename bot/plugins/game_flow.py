@@ -37,6 +37,13 @@ async def process_dice_rolls(client: Client, game):
     cp_roll = game.current_player_roll
     a_roll = game.answerer_roll
 
+    from pyrogram.types import ReplyParameters
+
+    # Reply to player list if it exists
+    reply_params = None
+    if game.player_list_message_id:
+        reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
     if cp_roll > a_roll:
         # Question revealed
         taunt = get_taunt("revealed")
@@ -49,7 +56,12 @@ async def process_dice_rolls(client: Client, game):
         )
         database.update_player_stat(current_player.user_id, "times_revealed_question")
         database.update_player_stat(answerer.user_id, "times_exposed")
-        await client.send_message(chat_id, result_text)
+        await client.send_message(
+            chat_id=chat_id,
+            text=result_text,
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
+        )
         await end_turn_and_advance(client, game)
     elif a_roll > cp_roll:
         # Question stays secret
@@ -63,7 +75,12 @@ async def process_dice_rolls(client: Client, game):
         )
         database.update_player_stat(current_player.user_id, "times_failed_to_reveal")
         database.update_player_stat(answerer.user_id, "times_lucky")
-        await client.send_message(chat_id, result_text)
+        await client.send_message(
+            chat_id=chat_id,
+            text=result_text,
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
+        )
         await end_turn_and_advance(client, game)
     else:
         # Tie
@@ -73,7 +90,12 @@ async def process_dice_rolls(client: Client, game):
             result_text += f"\n\n{taunt}"
         game.current_player_roll = None
         game.answerer_roll = None
-        await client.send_message(chat_id, result_text)
+        await client.send_message(
+            chat_id=chat_id,
+            text=result_text,
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
+        )
 
 
 

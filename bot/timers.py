@@ -111,6 +111,8 @@ def calculate_warning_times(timeout: int) -> list:
 
 async def send_timer_warning(client: Client, game, mention: str, phase: str, seconds_left: int):
     """Sends a timer warning message and deletes the previous one."""
+    from pyrogram.types import ReplyParameters
+
     if seconds_left >= 60:
         time_text = f"{seconds_left // 60} minute{'s' if seconds_left >= 120 else ''}"
     else:
@@ -125,10 +127,17 @@ async def send_timer_warning(client: Client, game, mention: str, phase: str, sec
         except Exception:
             pass  # Ignore if already deleted
 
+    # Reply to player list if it exists
+    reply_params = None
+    if game.player_list_message_id:
+        reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
     # Send new warning and store its ID
     msg = await client.send_message(
-        game.chat_id,
-        f"{emoji} {mention} - {time_text} left to {phase}!"
+        chat_id=game.chat_id,
+        text=f"{emoji} {mention} - {time_text} left to {phase}!",
+        reply_parameters=reply_params,
+        message_thread_id=game.message_thread_id,
     )
     game.last_timer_warning_message_id = msg.id
 
@@ -183,9 +192,16 @@ async def asking_timer_task(client: Client, game, timeout: int):
             game.remove_player(timed_out_user_id)
 
             # Send timeout message
+            from pyrogram.types import ReplyParameters
+            reply_params = None
+            if game.player_list_message_id:
+                reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
             await client.send_message(
-                game.chat_id,
-                f"⏱️ Time's up! {timed_out_mention} was AFK and has been marked inactive."
+                chat_id=game.chat_id,
+                text=f"⏱️ Time's up! {timed_out_mention} was AFK and has been marked inactive.",
+                reply_parameters=reply_params,
+                message_thread_id=game.message_thread_id,
             )
 
             # Check if game should end (1 or fewer active players)
@@ -256,9 +272,16 @@ async def answering_timer_task(client: Client, game, timeout: int):
             game.remove_player(timed_out_user_id)
 
             # Send timeout message
+            from pyrogram.types import ReplyParameters
+            reply_params = None
+            if game.player_list_message_id:
+                reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
             await client.send_message(
-                game.chat_id,
-                f"⏱️ Time's up! {timed_out_mention} was AFK and has been marked inactive."
+                chat_id=game.chat_id,
+                text=f"⏱️ Time's up! {timed_out_mention} was AFK and has been marked inactive.",
+                reply_parameters=reply_params,
+                message_thread_id=game.message_thread_id,
             )
 
             # Check if game should end (1 or fewer active players)
@@ -296,18 +319,27 @@ async def dice_roll_timer_task(client: Client, game, timeout: int):
         return
 
     # Auto-roll for any player who hasn't rolled
+    from pyrogram.types import ReplyParameters
+    reply_params = None
+    if game.player_list_message_id:
+        reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
     if game.current_player_roll is None:
         game.current_player_roll = random.randint(1, 6)
         await client.send_message(
-            game.chat_id,
-            f"🎲 {game.current_player.mention} didn't roll - auto-rolled: **{game.current_player_roll}**"
+            chat_id=game.chat_id,
+            text=f"🎲 {game.current_player.mention} didn't roll - auto-rolled: **{game.current_player_roll}**",
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
         )
 
     if game.answerer_roll is None:
         game.answerer_roll = random.randint(1, 6)
         await client.send_message(
-            game.chat_id,
-            f"🎲 {game.answerer.mention} didn't roll - auto-rolled: **{game.answerer_roll}**"
+            chat_id=game.chat_id,
+            text=f"🎲 {game.answerer.mention} didn't roll - auto-rolled: **{game.answerer_roll}**",
+            reply_parameters=reply_params,
+            message_thread_id=game.message_thread_id,
         )
 
     # Process the dice rolls
@@ -355,9 +387,16 @@ async def accept_reject_timer_task(client: Client, game, timeout: int):
         # Timeout reached - auto-accept
         if game.game_state == GameState.ROLLING and game.current_player:
             LOGGER.info(f"Accept/reject timer expired - auto-accepting")
+            from pyrogram.types import ReplyParameters
+            reply_params = None
+            if game.player_list_message_id:
+                reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
             await client.send_message(
-                game.chat_id,
-                f"⏱️ Time's up! {game.current_player.mention} didn't respond. Answer auto-accepted!"
+                chat_id=game.chat_id,
+                text=f"⏱️ Time's up! {game.current_player.mention} didn't respond. Answer auto-accepted!",
+                reply_parameters=reply_params,
+                message_thread_id=game.message_thread_id,
             )
 
             # Auto-accept: give points to answerer

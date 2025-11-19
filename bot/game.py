@@ -42,8 +42,9 @@ class VoteOutcome(Enum):
 class Game:
     """Manages the state and logic of a single Frozen Bridge game."""
 
-    def __init__(self, chat_id: int):
+    def __init__(self, chat_id: int, message_thread_id: Optional[int] = None):
         self.chat_id: int = chat_id
+        self.message_thread_id: Optional[int] = message_thread_id  # Topic thread ID if in topic
         # NEW: Use dictionary for all players and queue for active players
         self.all_players: Dict[int, Player] = {}  # user_id -> Player
         self.active_player_queue: List[int] = []  # List of active user_ids in turn order

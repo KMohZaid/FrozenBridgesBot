@@ -59,10 +59,17 @@ async def start_vote(client: Client, game, requester, vote_type: str, target_id:
         ]
     )
 
+    from pyrogram.types import ReplyParameters
+    reply_params = None
+    if game.player_list_message_id:
+        reply_params = ReplyParameters(message_id=game.player_list_message_id)
+
     vote_message = await client.send_message(
         chat_id=game.chat_id,
         text=format_vote_message(game, vote_type),
         reply_markup=keyboard,
+        reply_parameters=reply_params,
+        message_thread_id=game.message_thread_id,
     )
     game.vote_message_id = vote_message.id
 
